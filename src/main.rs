@@ -17,7 +17,9 @@ impl SimpleState for Example {
         let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
 
         let mut camera_trans = Transform::default();
-        camera_trans.set_z(-0.4);
+        camera_trans.set_z(-4.0);
+        //camera_trans.set_rotation_euler(0.0, 0.0, 90.0);
+        camera_trans.face_towards([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
 
         // Make the camera
         world
@@ -32,7 +34,7 @@ impl SimpleState for Example {
         light_transform.set_y(2.0);
         light_transform.set_z(-2.0);
         let light_point = PointLight {
-            color: [1.0, 1.0, 1.0].into(),
+            color: [1.0, 1.0, 1.0, 1.0].into(),
             intensity: 3.0,
             radius: 5.0,
             ..PointLight::default()
