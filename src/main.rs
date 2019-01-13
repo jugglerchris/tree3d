@@ -2,10 +2,11 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture},
+    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode},
     core::{Transform, transform::TransformBundle},
     utils::application_root_dir,
     assets::AssetLoaderSystemData,
+    input::{get_key, is_close_requested, is_key_down},
 };
 
 struct Example;
@@ -49,7 +50,7 @@ impl SimpleState for Example {
         let thing_pos = Transform::default();
         let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
-                Shape::Sphere(32, 32).generate::<Vec<PosNormTex>>(None),
+                Shape::Cylinder(32, None).generate::<Vec<PosNormTex>>(None),
                 (),
             )
         });
@@ -68,6 +69,19 @@ impl SimpleState for Example {
             .with(thing_mesh)
             .with(thing_material)
             .build();
+    }
+
+    fn handle_event( &mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent, ) -> SimpleTrans {
+        let StateData { world, .. } = data;
+        if let StateEvent::Window(event) = &event {
+            if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
+                return Trans::Quit;
+            }
+            match get_key(&event) {
+                _ => {}
+            }
+        }
+        Trans::None
     }
 }
 
