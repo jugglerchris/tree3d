@@ -2,17 +2,19 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light},
+    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, Shape, Mesh, Material, MaterialDefaults, Texture},
     core::{Transform, transform::TransformBundle},
     utils::application_root_dir,
+    assets::AssetLoaderSystemData,
 };
-use nalgebra::geometry::Translation3;
 
 struct Example;
 
 impl SimpleState for Example {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
+
+        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
 
         let mut camera_trans = Transform::default();
         camera_trans.set_z(-0.4);
@@ -33,6 +35,30 @@ impl SimpleState for Example {
             .create_entity()
             .with(Light::Point(Default::default()))
             .with(light_transform)
+            .build();
+
+        // And an object.
+        let thing_pos = Transform::default();
+        let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
+            loader.load_from_data(
+                Shape::Sphere(32, 32).generate::<Vec<PosNormTex>>(None),
+                (),
+            )
+        });
+
+        let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
+            loader.load_from_data([1.0, 0.0, 1.0, 1.0].into(), ())
+        });
+
+        let thing_material = Material {
+            albedo: thing_albedo,
+            ..material_defaults.clone()
+        };
+        world
+            .create_entity()
+            .with(thing_pos)
+            .with(thing_mesh)
+            .with(thing_material)
             .build();
     }
 }
