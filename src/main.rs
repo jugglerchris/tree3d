@@ -2,7 +2,7 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, Shape, Mesh, Material, MaterialDefaults, Texture},
+    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture},
     core::{Transform, transform::TransformBundle},
     utils::application_root_dir,
     assets::AssetLoaderSystemData,
@@ -31,9 +31,15 @@ impl SimpleState for Example {
         light_transform.set_x(2.0);
         light_transform.set_y(2.0);
         light_transform.set_z(-2.0);
+        let light_point = PointLight {
+            color: [1.0, 1.0, 1.0].into(),
+            intensity: 3.0,
+            radius: 5.0,
+            ..PointLight::default()
+        };
         world
             .create_entity()
-            .with(Light::Point(Default::default()))
+            .with(Light::Point(light_point))
             .with(light_transform)
             .build();
 
