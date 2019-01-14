@@ -7,9 +7,12 @@ use amethyst::{
     utils::application_root_dir,
     assets::AssetLoaderSystemData,
     input::{get_key, is_close_requested, is_key_down},
+    ecs::prelude::Entity,
 };
 
-struct Example;
+struct Example {
+    pub thing: Option<Entity>,
+}
 
 impl SimpleState for Example {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
@@ -63,12 +66,12 @@ impl SimpleState for Example {
             albedo: thing_albedo,
             ..material_defaults.clone()
         };
-        world
+        self.thing = Some(world
             .create_entity()
             .with(thing_pos)
             .with(thing_mesh)
             .with(thing_material)
-            .build();
+            .build());
     }
 
     fn handle_event( &mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent, ) -> SimpleTrans {
@@ -96,7 +99,7 @@ fn main() -> amethyst::Result<()> {
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?//RenderBundle::new(pipe, Some(config)))?
         .with_basic_renderer(path, DrawShaded::<PosNormTex>::new(), false)?;
-    let mut game = Application::new("./", Example, game_data)?;
+    let mut game = Application::new("./", Example { thing: None }, game_data)?;
 
     game.run();
 
