@@ -51,7 +51,9 @@ impl SimpleState for Example {
             .build();
 
         // And an object.
-        let thing_pos = Transform::default();
+        let mut thing_pos = Transform::default();
+        thing_pos.set_scale(1.0, 1.0, 1.0);
+        thing_pos.face_towards([0.0, 10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
         let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
                 Shape::Cylinder(32, None).generate::<Vec<PosNormTex>>(None),
