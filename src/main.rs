@@ -22,6 +22,7 @@ impl SimpleState for Example {
 
         let mut camera_trans = Transform::default();
         camera_trans.set_z(-4.0);
+        camera_trans.set_x(-4.0);
         //camera_trans.set_rotation_euler(0.0, 0.0, 90.0);
         camera_trans.face_towards([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
 
@@ -34,12 +35,12 @@ impl SimpleState for Example {
 
         // Make a light
         let mut light_transform = Transform::default();
-        light_transform.set_x(2.0);
+        light_transform.set_x(-2.0);
         light_transform.set_y(2.0);
         light_transform.set_z(-2.0);
         let light_point = PointLight {
             color: [1.0, 1.0, 1.0, 1.0].into(),
-            intensity: 3.0,
+            intensity: 13.0,
             radius: 5.0,
             ..PointLight::default()
         };
