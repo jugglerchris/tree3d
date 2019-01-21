@@ -37,9 +37,9 @@ impl Example {
         let entity = entity_builder.build();
         if depth > 0 {
             let mut child_transform = Transform::default();
-            child_transform.set_z(-1.0);
+            child_transform.set_z(-1.01);
             //child_transform.set_x(-0.5);
-            child_transform.set_scale(0.5, 0.5, 1.0);
+            child_transform.set_scale(0.8, 0.8, 1.0);
             child_transform.roll_local(PI/2.);
             child_transform.pitch_local(0.3);
             self.make_tree_at(world, mesh, material, &child_transform, Some(entity), depth-1);
@@ -54,7 +54,7 @@ impl Example {
         let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
 
         let mut thing_pos = Transform::default();
-        thing_pos.set_scale(1.0, 1.0, 1.0);
+        thing_pos.set_scale(0.5, 0.5, 1.0);
         thing_pos.face_towards([0.0, 10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
         let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
@@ -100,11 +100,11 @@ impl SimpleState for Example {
         // Make a light
         let mut light_transform = Transform::default();
         light_transform.set_x(-2.0);
-        light_transform.set_y(2.0);
+        light_transform.set_y(12.0);
         light_transform.set_z(-2.0);
         let light_point = PointLight {
             color: [1.0, 1.0, 1.0, 1.0].into(),
-            intensity: 13.0,
+            intensity: 130.0,
             radius: 5.0,
             ..PointLight::default()
         };
