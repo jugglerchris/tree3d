@@ -2,7 +2,7 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode},
+    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     utils::application_root_dir,
     assets::{AssetLoaderSystemData, Handle},
@@ -119,7 +119,7 @@ impl SimpleState for Example {
     }
 
     fn handle_event( &mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent, ) -> SimpleTrans {
-        let StateData { world, .. } = data;
+        let StateData { world: _, .. } = data;
         if let StateEvent::Window(event) = &event {
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
                 return Trans::Quit;
@@ -140,9 +140,20 @@ fn main() -> amethyst::Result<()> {
         application_root_dir()
     );
 
+    let render_bundle = {
+        let display_config = DisplayConfig::load(&path);
+        let pipe = Pipeline::build().with_stage(
+            Stage::with_backbuffer()
+                .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
+                .with_pass(DrawShaded::<PosNormTex>::new())
+                .with_pass(DrawSkybox::new()),
+        );
+        RenderBundle::new(pipe, Some(display_config))
+    };
+
     let game_data = GameDataBuilder::default()
-        .with_bundle(TransformBundle::new())?//RenderBundle::new(pipe, Some(config)))?
-        .with_basic_renderer(path, DrawShaded::<PosNormTex>::new(), false)?;
+        .with_bundle(TransformBundle::new())?
+        .with_bundle(render_bundle)?;
     let mut game = Application::new("./", Example { thing: None }, game_data)?;
 
     game.run();
