@@ -5,8 +5,8 @@ use amethyst::{
     renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
-    utils::application_root_dir,
-    assets::{AssetLoaderSystemData, Handle},
+    utils::{application_root_dir, scene::BasicScenePrefab},
+    assets::{AssetLoaderSystemData, Handle, PrefabLoader, PrefabLoaderSystem, RonFormat},
     input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
 };
@@ -81,15 +81,26 @@ impl Example {
     }
 }
 
+type MyPrefabData = BasicScenePrefab<Vec<PosNormTex>>;
+
 impl SimpleState for Example {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
         let mut camera_trans = Transform::default();
-        camera_trans.set_z(-10.0);
+        camera_trans.set_z(-0.0);
         camera_trans.set_x(-4.0);
+        camera_trans.set_y(1.0);
         //camera_trans.set_rotation_euler(0.0, 0.0, 90.0);
         camera_trans.face_towards([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
+
+        // Make the initial background scene
+        {
+            let handle = world.exec(|loader: PrefabLoader<'_, MyPrefabData>| {
+                loader.load("resources/scene.ron", RonFormat, (), ())
+            });
+            world.create_entity().with(handle).build();
+        }
 
         // Make an tree.
         self.make_tree(world);
@@ -159,6 +170,7 @@ fn main() -> amethyst::Result<()> {
 
     let key_bindings_path = format!("{}/resources/input.ron", application_root_dir());
     let game_data = GameDataBuilder::default()
+        .with(PrefabLoaderSystem::<MyPrefabData>::default(), "", &[])
         .with_bundle(TransformBundle::new())?
         .with_bundle(InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?)?
         .with_bundle(ArcBallControlBundle::<String, String>::new())?
