@@ -4,9 +4,10 @@ use amethyst::{
     prelude::*,
     renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
+    controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
     utils::application_root_dir,
     assets::{AssetLoaderSystemData, Handle},
-    input::{get_key, is_close_requested, is_key_down},
+    input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
 };
 use std::f32::consts::PI;
@@ -90,11 +91,19 @@ impl SimpleState for Example {
         //camera_trans.set_rotation_euler(0.0, 0.0, 90.0);
         camera_trans.face_towards([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
 
+        // Make an tree.
+        self.make_tree(world);
+
         // Make the camera
         world
             .create_entity()
             .with(Camera::from(Projection::perspective(1.3, 1.0471975512)))
             .with(camera_trans)
+            .with(ArcBallControlTag {
+                target: self.thing.unwrap(),
+                distance: 12.0,
+            })
+            .with(FlyControlTag)
             .build();
 
         // Make a light
@@ -113,9 +122,6 @@ impl SimpleState for Example {
             .with(Light::Point(light_point))
             .with(light_transform)
             .build();
-
-        // And an object.
-        self.make_tree(world);
     }
 
     fn handle_event( &mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent, ) -> SimpleTrans {
@@ -151,8 +157,11 @@ fn main() -> amethyst::Result<()> {
         RenderBundle::new(pipe, Some(display_config))
     };
 
+    let key_bindings_path = format!("{}/resources/input.ron", application_root_dir());
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?
+        .with_bundle(InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?)?
+        .with_bundle(ArcBallControlBundle::<String, String>::new())?
         .with_bundle(render_bundle)?;
     let mut game = Application::new("./", Example { thing: None }, game_data)?;
 
