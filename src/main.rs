@@ -2,7 +2,7 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
+    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, MeshData, MeshBuilder, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
     utils::{application_root_dir, scene::BasicScenePrefab},
@@ -79,6 +79,49 @@ impl Example {
                                             None,
                                             5));
     }
+    fn make_cube(&mut self, world: &mut World) {
+        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
+
+        let mut thing_pos = Transform::default();
+        thing_pos.set_scale(2.5, 2.5, 2.5);
+        thing_pos.face_towards([0.0, 10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
+        thing_pos.set_x(3.0);
+        thing_pos.set_y(3.0);
+        thing_pos.set_z(0.0);
+        /*
+        let thing_mesh = MeshBuilder::new(
+                vec![
+                ])
+            .build()?;
+            */
+        let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
+            loader.load_from_data(
+                MeshData::PosNormTex(vec![
+                    PosNormTex {
+                     position: [0.0, 0.0, 0.0].into(),
+                     normal: [1.0, 0.0, 0.0].into(),
+                     tex_coord: [0.0, 0.0].into(),
+                    },
+                ]),
+                (),
+            )
+        });
+
+        let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
+            loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
+        });
+
+        let thing_material = Material {
+            albedo: thing_albedo,
+            ..material_defaults.clone()
+        };
+        let entity = world
+                .create_entity()
+                .with(thing_pos)
+                .with(thing_mesh)
+                .with(thing_material)
+                .build();
+    }
 }
 
 type MyPrefabData = BasicScenePrefab<Vec<PosNormTex>>;
@@ -104,6 +147,9 @@ impl SimpleState for Example {
 
         // Make an tree.
         self.make_tree(world);
+
+        // Make a cube
+        self.make_cube(world);
 
         // Make the camera
         world
