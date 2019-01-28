@@ -99,7 +99,17 @@ impl Example {
                 MeshData::PosNormTex(vec![
                     PosNormTex {
                      position: [0.0, 0.0, 0.0].into(),
-                     normal: [1.0, 0.0, 0.0].into(),
+                     normal: [1.0, 0.0, 1.0].into(),
+                     tex_coord: [0.0, 0.0].into(),
+                    },
+                    PosNormTex {
+                     position: [0.0, 1.0, 0.0].into(),
+                     normal: [1.0, 0.0, 1.0].into(),
+                     tex_coord: [0.0, 0.0].into(),
+                    },
+                    PosNormTex {
+                     position: [1.0, 1.0, 0.0].into(),
+                     normal: [0.0, 0.0, 1.0].into(),
                      tex_coord: [0.0, 0.0].into(),
                     },
                 ]),
