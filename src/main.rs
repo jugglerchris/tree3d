@@ -88,12 +88,6 @@ impl Example {
         thing_pos.set_x(3.0);
         thing_pos.set_y(3.0);
         thing_pos.set_z(0.0);
-        /*
-        let thing_mesh = MeshBuilder::new(
-                vec![
-                ])
-            .build()?;
-            */
         let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
                 MeshData::PosNormTex(vec![
