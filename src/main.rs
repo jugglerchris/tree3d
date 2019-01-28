@@ -99,17 +99,17 @@ impl Example {
                 MeshData::PosNormTex(vec![
                     PosNormTex {
                      position: [0.0, 0.0, 0.0].into(),
-                     normal: [1.0, 0.0, 1.0].into(),
+                     normal: [0.0, 0.0, -1.0].into(),
                      tex_coord: [0.0, 0.0].into(),
                     },
                     PosNormTex {
                      position: [0.0, 1.0, 0.0].into(),
-                     normal: [1.0, 0.0, 1.0].into(),
+                     normal: [0.0, 0.0, -1.0].into(),
                      tex_coord: [0.0, 0.0].into(),
                     },
                     PosNormTex {
                      position: [1.0, 1.0, 0.0].into(),
-                     normal: [0.0, 0.0, 1.0].into(),
+                     normal: [0.0, 0.0, -1.0].into(),
                      tex_coord: [0.0, 0.0].into(),
                     },
                 ]),
@@ -118,7 +118,7 @@ impl Example {
         });
 
         let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
-            loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
+            loader.load_from_data([1.0, 0.2, 1.0, 1.0].into(), ())
         });
 
         let thing_material = Material {
