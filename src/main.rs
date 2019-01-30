@@ -204,7 +204,7 @@ fn main() -> amethyst::Result<()> {
 
     let path = format!(
         "{}/resources/display_config.ron",
-        application_root_dir()
+        application_root_dir().unwrap().to_str().unwrap()
     );
 
     let render_bundle = {
@@ -218,7 +218,7 @@ fn main() -> amethyst::Result<()> {
         RenderBundle::new(pipe, Some(display_config))
     };
 
-    let key_bindings_path = format!("{}/resources/input.ron", application_root_dir());
+    let key_bindings_path = format!("{}/resources/input.ron", application_root_dir().unwrap().to_str().unwrap());
     let game_data = GameDataBuilder::default()
         .with(PrefabLoaderSystem::<MyPrefabData>::default(), "", &[])
         .with_bundle(TransformBundle::new())?
