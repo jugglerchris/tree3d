@@ -5,7 +5,7 @@ use amethyst::{
     renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, MeshData, MeshBuilder, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
-    utils::{application_root_dir, scene::BasicScenePrefab},
+    utils::{application_root_dir, scene::BasicScenePrefab, auto_fov::{AutoFov, AutoFovSystem}},
     assets::{AssetLoaderSystemData, Handle, PrefabLoader, PrefabLoaderSystem, RonFormat},
     input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
@@ -165,6 +165,7 @@ impl SimpleState for Example {
                 distance: 12.0,
             })
             .with(FlyControlTag)
+            .with(AutoFov::new())
             .build();
 
         // Make a light
@@ -221,6 +222,7 @@ fn main() -> amethyst::Result<()> {
     let key_bindings_path = format!("{}/resources/input.ron", application_root_dir().unwrap().to_str().unwrap());
     let game_data = GameDataBuilder::default()
         .with(PrefabLoaderSystem::<MyPrefabData>::default(), "", &[])
+        .with(AutoFovSystem, "", &[])
         .with_bundle(TransformBundle::new())?
         .with_bundle(InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?)?
         .with_bundle(ArcBallControlBundle::<String, String>::new())?
