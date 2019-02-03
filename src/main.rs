@@ -2,7 +2,7 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, MeshData, MeshBuilder, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
+    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, MeshData, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
     utils::{application_root_dir, scene::BasicScenePrefab, auto_fov::{AutoFov, AutoFovSystem}},
@@ -88,25 +88,62 @@ impl Example {
         thing_pos.set_x(3.0);
         thing_pos.set_y(3.0);
         thing_pos.set_z(0.0);
+        const POINTS: usize = 20;
+
+        let mut points = vec![];
+        for i in 0..POINTS {
+            let angle_start = (i as f32) * 2.*PI / (POINTS as f32);
+            let angle_next = ((i+1) as f32) * 2.*PI / (POINTS as f32);
+            let angle_middle = (i as f32 + 0.5) * 2.*PI / (POINTS as f32);
+            // Bottom right
+            points.push(
+                PosNormTex {
+                    position: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    normal: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+            // Bottom left
+            points.push(
+                PosNormTex {
+                    position: [ angle_start.cos(), 0.0, angle_start.sin() ].into(),
+                    normal: [ angle_start.cos(), 0.0, angle_start.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+            // Top middle
+            points.push(
+                PosNormTex {
+                    position: [ angle_middle.cos(), 1.0, angle_middle.sin() ].into(),
+                    normal: [ angle_middle.cos(), 0.0, angle_middle.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+
+            let angle_nextmid = ((i+1) as f32 + 0.5) * 2.*PI / (POINTS as f32);
+            // Bottom middle
+            points.push(
+                PosNormTex {
+                    position: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    normal: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+            // Top left
+            points.push(
+                PosNormTex {
+                    position: [ angle_middle.cos(), 1.0, angle_middle.sin() ].into(),
+                    normal: [ angle_middle.cos(), 0.0, angle_middle.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+            // Top right
+            points.push(
+                PosNormTex {
+                    position: [ angle_nextmid.cos(), 1.0, angle_nextmid.sin() ].into(),
+                    normal: [ angle_nextmid.cos(), 0.0, angle_nextmid.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                });
+        }
+
         let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
-                MeshData::PosNormTex(vec![
-                    PosNormTex {
-                     position: [0.0, 0.0, 0.0].into(),
-                     normal: [0.0, 0.0, -1.0].into(),
-                     tex_coord: [0.0, 0.0].into(),
-                    },
-                    PosNormTex {
-                     position: [0.0, 1.0, 0.0].into(),
-                     normal: [0.0, 0.0, -1.0].into(),
-                     tex_coord: [0.0, 0.0].into(),
-                    },
-                    PosNormTex {
-                     position: [1.0, 1.0, 0.0].into(),
-                     normal: [0.0, 0.0, -1.0].into(),
-                     tex_coord: [0.0, 0.0].into(),
-                    },
-                ]),
+                MeshData::PosNormTex(points),
                 (),
             )
         });
