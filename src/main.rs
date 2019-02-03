@@ -84,9 +84,9 @@ impl Example {
 
         let mut thing_pos = Transform::default();
         thing_pos.set_scale(2.5, 2.5, 2.5);
-        thing_pos.face_towards([0.0, 10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
-        thing_pos.set_x(3.0);
-        thing_pos.set_y(3.0);
+        thing_pos.face_towards([0.0, 0.0, 10.0].into(), [0.0, 1.0, 0.0].into());
+        thing_pos.set_x(0.0);
+        thing_pos.set_y(0.0);
         thing_pos.set_z(0.0);
         const POINTS: usize = 20;
 
