@@ -2,7 +2,7 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, Shape, MeshData, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
+    renderer::{PosNormTex, DrawShaded, DrawSkybox, Projection, Camera, Light, PointLight, MeshData, Mesh, Material, MaterialDefaults, Texture, VirtualKeyCode, DisplayConfig, Pipeline, Stage, RenderBundle},
     core::{Transform, transform::{TransformBundle, Parent}},
     controls::{ArcBallControlBundle, ArcBallControlTag, FlyControlTag},
     utils::{application_root_dir, scene::BasicScenePrefab, auto_fov::{AutoFov, AutoFovSystem}},
@@ -38,56 +38,20 @@ impl Example {
         let entity = entity_builder.build();
         if depth > 0 {
             let mut child_transform = Transform::default();
-            child_transform.set_z(1.01);
             //child_transform.set_x(-0.5);
-            child_transform.set_scale(0.8, 0.8, 1.0);
-            child_transform.roll_local(PI/2.);
-            child_transform.pitch_local(0.3);
+            child_transform.set_scale(0.8, 0.8, 0.8);
+            child_transform.set_y(1.0);
+            child_transform.yaw_local(PI/2.);
+            child_transform.roll_local(0.3);
             self.make_tree_at(world, mesh, material, &child_transform, Some(entity), depth-1);
-            child_transform.pitch_local(-0.7);
+            child_transform.roll_local(-0.7);
             child_transform.set_scale(0.45, 0.45, 0.8);
             self.make_tree_at(world, mesh, material, &child_transform, Some(entity), depth-1);
         }
         entity
     }
 
-    fn make_tree(&mut self, world: &mut World) {
-        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
-
-        let mut thing_pos = Transform::default();
-        thing_pos.set_scale(0.5, 0.5, 1.0);
-        thing_pos.face_towards([0.0, -10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
-        let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
-            loader.load_from_data(
-                Shape::Cylinder(32, None).generate::<Vec<PosNormTex>>(None),
-                (),
-            )
-        });
-
-        let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
-            loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
-        });
-
-        let thing_material = Material {
-            albedo: thing_albedo,
-            ..material_defaults.clone()
-        };
-        self.thing = Some(self.make_tree_at(world,
-                                            &thing_mesh,
-                                            &thing_material,
-                                            &thing_pos,
-                                            None,
-                                            5));
-    }
-    fn make_cube(&mut self, world: &mut World) {
-        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
-
-        let mut thing_pos = Transform::default();
-        thing_pos.set_scale(2.5, 2.5, 2.5);
-        thing_pos.face_towards([0.0, 0.0, 10.0].into(), [0.0, 1.0, 0.0].into());
-        thing_pos.set_x(0.0);
-        thing_pos.set_y(0.0);
-        thing_pos.set_z(0.0);
+    fn make_trunk_mesh(&mut self, world: &mut World) -> Handle<Mesh> {
         const POINTS: usize = 20;
 
         let mut points = vec![];
@@ -141,27 +105,36 @@ impl Example {
                 });
         }
 
-        let thing_mesh = world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
+        world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
                 MeshData::PosNormTex(points),
                 (),
             )
-        });
+        })
+    }
+
+    fn make_tree(&mut self, world: &mut World) {
+        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
+
+        let mut thing_pos = Transform::default();
+        thing_pos.set_scale(0.2, 1.0, 0.2);
+        //thing_pos.face_towards([0.0, -10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
+        let thing_mesh = self.make_trunk_mesh(world);
 
         let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
-            loader.load_from_data([1.0, 0.2, 1.0, 1.0].into(), ())
+            loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
         });
 
         let thing_material = Material {
             albedo: thing_albedo,
             ..material_defaults.clone()
         };
-        let entity = world
-                .create_entity()
-                .with(thing_pos)
-                .with(thing_mesh)
-                .with(thing_material)
-                .build();
+        self.thing = Some(self.make_tree_at(world,
+                                            &thing_mesh,
+                                            &thing_material,
+                                            &thing_pos,
+                                            None,
+                                            5));
     }
 }
 
@@ -189,9 +162,6 @@ impl SimpleState for Example {
         // Make an tree.
         self.make_tree(world);
 
-        // Make a cube
-        self.make_cube(world);
-
         // Make the camera
         world
             .create_entity()
@@ -199,7 +169,7 @@ impl SimpleState for Example {
             .with(camera_trans)
             .with(ArcBallControlTag {
                 target: self.thing.unwrap(),
-                distance: 12.0,
+                distance: 6.0,
             })
             .with(FlyControlTag)
             .with(AutoFov::new())
