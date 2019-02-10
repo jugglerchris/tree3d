@@ -37,20 +37,92 @@ impl Example {
         }
         let entity = entity_builder.build();
         if depth > 0 {
+            let mut scale = Transform::default();
+            //scale.set_scale(0.9, 0.9, 0.9);
             let mut child_transform = Transform::default();
-            //child_transform.set_x(-0.5);
-            child_transform.set_scale(0.8, 0.8, 0.8);
-            child_transform.set_y(1.0);
-            child_transform.yaw_local(PI/2.);
+            child_transform.move_up(1.0);
+            //child_transform.yaw_local(PI/2.);
             child_transform.roll_local(0.3);
+            //scale.concat(&child_transform);
+            //child_transform.concat(&scale);
+            //child_transform = scale;
             self.make_tree_at(world, mesh, material, &child_transform, Some(entity), depth-1);
-            child_transform.roll_local(-0.7);
-            child_transform.set_scale(0.45, 0.45, 0.8);
+            /*
+            child_transform.roll_local(-1.4);
+            child_transform.set_scale(0.5, 0.9, 0.5);
             self.make_tree_at(world, mesh, material, &child_transform, Some(entity), depth-1);
+            */
         }
         entity
     }
 
+    fn make_cylinder(&mut self, world: &mut World) -> Handle<Mesh> {
+        const POINTS: usize = 20;
+
+        let mut points = vec![];
+        for i in 0..POINTS {
+            let angle_start = (i as f32) * 2.*PI / (POINTS as f32);
+            let angle_next = ((i+1) as f32) * 2.*PI / (POINTS as f32);
+            let angle_middle = (i as f32 + 0.5) * 2.*PI / (POINTS as f32);
+            let angle_nextmid = ((i+1) as f32 + 0.5) * 2.*PI / (POINTS as f32);
+            let bottom_right =  PosNormTex {
+                    position: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    normal: [ angle_next.cos(), 0.0, angle_next.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            let bottom_left =  PosNormTex {
+                    position: [ angle_start.cos(), 0.0, angle_start.sin() ].into(),
+                    normal: [ angle_start.cos(), 0.0, angle_start.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            let top_middle = PosNormTex {
+                    position: [ angle_middle.cos(), 1.0, angle_middle.sin() ].into(),
+                    normal: [ angle_middle.cos(), 0.0, angle_middle.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            let next_middle = PosNormTex {
+                    position: [ angle_nextmid.cos(), 1.0, angle_nextmid.sin() ].into(),
+                    normal: [ angle_nextmid.cos(), 0.0, angle_nextmid.sin() ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            let centre_top = PosNormTex {
+                    position: [ 0.0, 1.0, 0.0 ].into(),
+                    normal: [ 0.0, 1.0, 0.0 ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            let centre_bot = PosNormTex {
+                    position: [ 0.0, 0.0, 0.0 ].into(),
+                    normal: [ 0.0, -1.0, 0.0 ].into(),
+                    tex_coord: [0.0, 0.0].into(),
+                };
+            // Bottom half triangle
+            points.push(bottom_right);
+            points.push(bottom_left);
+            points.push(top_middle);
+
+            // Top half triangle
+            points.push(bottom_right);
+            points.push(top_middle);
+            points.push(next_middle);
+
+            // Top cap piece
+            points.push(top_middle);
+            points.push(centre_top);
+            points.push(next_middle);
+
+            // Bottom cap piece
+            points.push(bottom_left);
+            points.push(bottom_right);
+            points.push(centre_bot);
+        }
+
+        world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
+            loader.load_from_data(
+                MeshData::PosNormTex(points),
+                (),
+            )
+        })
+    }
     fn make_trunk_mesh(&mut self, world: &mut World) -> Handle<Mesh> {
         const POINTS: usize = 20;
 
@@ -112,6 +184,59 @@ impl Example {
             )
         })
     }
+    fn make_tree_mesh(&mut self, world: &mut World) -> Handle<Mesh> {
+        const POINTS: usize = 40;
+        // We divide into two halves
+        assert_eq!(POINTS % 2, 0);
+
+        let mut points = vec![];
+        for _ in 0..1 {
+            let mut points_bot = Vec::new();
+
+            let angle_delta = (2.*PI) / (POINTS as f32);
+            for i in 0..POINTS {
+                let angle = angle_delta * (i as f32);
+                points_bot.push(
+                    PosNormTex {
+                        position: [ angle.cos(), 0.0, angle.sin() ].into(),
+                        normal: [ angle.cos(), 0.0, angle.sin() ].into(),
+                        tex_coord: [0.0, 0.0].into(),
+                    });
+            }
+            // Top points are ahead by half a step
+            let mut points_top = Vec::new();
+            for i in 0..POINTS {
+                let u = ((i as f32 + 0.5) / (POINTS as f32)) % 1.0;
+                let centre_z = if u > 0.5 { -0.5 } else { 0.5 };
+                let angle = 4.0 * PI * u;
+                points_top.push(
+                    PosNormTex {
+                        position: [ angle.cos()/2.0, 1.0, centre_z + angle.sin()/2.0 ].into(),
+                        normal: [ angle.cos(), 0.0, angle.sin() ].into(),
+                        tex_coord: [0.0, 0.0].into(),
+                    });
+            }
+
+            for i in 0..POINTS {
+                let i0 = i;
+                let i1 = (i+1) % POINTS;
+                points.push(points_bot[i0]);
+                points.push(points_top[i0]);
+                points.push(points_bot[i1]);
+
+                points.push(points_top[i0]);
+                points.push(points_top[i1]);
+                points.push(points_bot[i1]);
+            }
+        }
+
+        world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
+            loader.load_from_data(
+                MeshData::PosNormTex(points),
+                (),
+            )
+        })
+    }
 
     fn make_tree(&mut self, world: &mut World) {
         let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
@@ -119,7 +244,7 @@ impl Example {
         let mut thing_pos = Transform::default();
         thing_pos.set_scale(0.2, 1.0, 0.2);
         //thing_pos.face_towards([0.0, -10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
-        let thing_mesh = self.make_trunk_mesh(world);
+        let thing_mesh = self.make_cylinder(world);
 
         let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
             loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
@@ -135,6 +260,29 @@ impl Example {
                                             &thing_pos,
                                             None,
                                             5));
+    }
+    fn make_tree2(&mut self, world: &mut World) {
+        let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
+
+        let mut thing_pos = Transform::default();
+        thing_pos.set_scale(0.2, 1.0, 0.2);
+        //thing_pos.face_towards([0.0, -10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
+        let thing_mesh = self.make_tree_mesh(world);
+
+        let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
+            loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
+        });
+
+        let thing_material = Material {
+            albedo: thing_albedo,
+            ..material_defaults.clone()
+        };
+        self.thing = Some(
+           world.create_entity()
+                .with(thing_pos)
+                .with(thing_mesh)
+                .with(thing_material)
+                .build());
     }
 }
 
@@ -160,7 +308,8 @@ impl SimpleState for Example {
         }
 
         // Make an tree.
-        self.make_tree(world);
+        //self.make_tree(world);
+        self.make_tree2(world);
 
         // Make the camera
         world
@@ -169,7 +318,7 @@ impl SimpleState for Example {
             .with(camera_trans)
             .with(ArcBallControlTag {
                 target: self.thing.unwrap(),
-                distance: 6.0,
+                distance: 3.0,
             })
             .with(FlyControlTag)
             .with(AutoFov::new())
