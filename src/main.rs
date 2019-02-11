@@ -187,7 +187,7 @@ impl Example {
     fn make_tree_mesh(&mut self, world: &mut World) -> Handle<Mesh> {
         const POINTS: usize = 40;
         // We divide into two halves
-        assert_eq!(POINTS % 2, 0);
+        assert_eq!(POINTS % 4, 0);
 
         let mut points = vec![];
         for _ in 0..1 {
@@ -205,13 +205,19 @@ impl Example {
             }
             // Top points are ahead by half a step
             let mut points_top = Vec::new();
+            let pt_mid = POINTS/2;
+            let pt_q1 = POINTS/4;
+            let pt_q3 = 3*POINTS/4;
             for i in 0..POINTS {
                 let u = ((i as f32 + 0.5) / (POINTS as f32)) % 1.0;
-                let centre_z = if u > 0.5 { -0.5 } else { 0.5 };
-                let angle = 4.0 * PI * u;
+                let (centre_x, angle) = if i < pt_q1 || i >= pt_q3 {
+                    (0.5, 4.0 * PI * u)
+                } else {
+                    (-0.5, 4.0 * PI * (u - 0.25))
+                };
                 points_top.push(
                     PosNormTex {
-                        position: [ angle.cos()/2.0, 1.0, centre_z + angle.sin()/2.0 ].into(),
+                        position: [ centre_x + angle.cos()/2.0, 1.0, angle.sin()/2.0 ].into(),
                         normal: [ angle.cos(), 0.0, angle.sin() ].into(),
                         tex_coord: [0.0, 0.0].into(),
                     });
@@ -318,7 +324,7 @@ impl SimpleState for Example {
             .with(camera_trans)
             .with(ArcBallControlTag {
                 target: self.thing.unwrap(),
-                distance: 3.0,
+                distance: 2.0,
             })
             .with(FlyControlTag)
             .with(AutoFov::new())
@@ -338,6 +344,18 @@ impl SimpleState for Example {
         world
             .create_entity()
             .with(Light::Point(light_point))
+            .with(light_transform.clone())
+            .build();
+        light_transform.set_z(4.0);
+        let light_point2 = PointLight {
+            color: [0.3, 1.0, 0.3, 1.0].into(),
+            intensity: 130.0,
+            radius: 5.0,
+            ..PointLight::default()
+        };
+        world
+            .create_entity()
+            .with(Light::Point(light_point2))
             .with(light_transform)
             .build();
     }
