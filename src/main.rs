@@ -10,6 +10,7 @@ use amethyst::{
     input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
 };
+use nalgebra::Vector4;
 use std::f32::consts::PI;
 
 
@@ -189,6 +190,28 @@ impl Example {
         // We divide into two halves
         assert_eq!(POINTS % 4, 0);
 
+        struct BranchPoint {
+            pos: [f32; 3],
+            out_normal: (f32, f32, f32),
+            radius: f32,
+        }
+
+        // For now assume that the first half of the base of the
+        // trunk matches up with the first branch point, and the
+        // second half the other.
+        let branch_points = [
+            BranchPoint {
+                pos: [0.0, 1.0, 0.5],
+                out_normal: (0.0, 2.0f32.sqrt(), 2.0f32.sqrt()),
+                radius: 0.5,
+            },
+            BranchPoint {
+                pos: [0.0, 1.0, -0.5],
+                out_normal: (0.0, 2.0f32.sqrt(), -2.0f32.sqrt()),
+                radius: 0.5,
+            },
+        ];
+
         let mut points = vec![];
         for _ in 0..1 {
             let mut points_bot = Vec::new();
@@ -205,22 +228,27 @@ impl Example {
             }
             // Top points are ahead by half a step
             let mut points_top = Vec::new();
-            let pt_mid = POINTS/2;
-            let pt_q1 = POINTS/4;
-            let pt_q3 = 3*POINTS/4;
-            for i in 0..POINTS {
-                let u = ((i as f32 + 0.5) / (POINTS as f32)) % 1.0;
-                let (centre_x, angle) = if i < pt_q1 || i >= pt_q3 {
-                    (0.5, 4.0 * PI * u)
-                } else {
-                    (-0.5, 4.0 * PI * (u - 0.25))
-                };
-                points_top.push(
-                    PosNormTex {
-                        position: [ centre_x + angle.cos()/2.0, 1.0, angle.sin()/2.0 ].into(),
-                        normal: [ angle.cos(), 0.0, angle.sin() ].into(),
-                        tex_coord: [0.0, 0.0].into(),
-                    });
+
+            for branch in &branch_points {
+                let mut transform = Transform::default();
+                transform.set_scale(branch.radius, branch.radius, branch.radius);
+                // now rotation
+                transform.set_position(branch.pos.into());
+                let matrix = transform.matrix();
+                for i in 0..POINTS/2 {
+                    let u = (i as f32 + 0.5) / ((POINTS/2) as f32);
+                    let u = if branch.pos[2] < 0.0 { u + 0.25 } else { u + 0.75 };
+                    let u = u % 1.0;
+                    let angle = u * 2.0 * PI;
+                    let pos = Vector4::new(angle.cos(), 0.0, angle.sin(), 1.0);
+                    let pos = matrix * pos;
+                    points_top.push(
+                        PosNormTex {
+                            position: [*pos.get(0).unwrap(), *pos.get(1).unwrap(), *pos.get(2).unwrap()].into(),
+                            normal: [ angle.cos(), 0.0, angle.sin() ].into(),
+                            tex_coord: [0.0, 0.0].into(),
+                        });
+                }
             }
 
             for i in 0..POINTS {
