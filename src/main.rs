@@ -10,7 +10,7 @@ use amethyst::{
     input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
 };
-use nalgebra::Vector4;
+use nalgebra::{Vector3, Vector4, UnitQuaternion, U3};
 use std::f32::consts::PI;
 
 
@@ -185,14 +185,14 @@ impl Example {
             )
         })
     }
-    fn make_tree_mesh(&mut self, world: &mut World) -> Handle<Mesh> {
+    fn make_tree_points(&self, points: &mut Vec<PosNormTex>, depth: usize) {
         const POINTS: usize = 40;
         // We divide into two halves
         assert_eq!(POINTS % 4, 0);
 
         struct BranchPoint {
             pos: [f32; 3],
-            out_normal: (f32, f32, f32),
+            out_normal: [f32; 3],
             radius: f32,
         }
 
@@ -201,18 +201,17 @@ impl Example {
         // second half the other.
         let branch_points = [
             BranchPoint {
-                pos: [0.0, 1.0, 0.5],
-                out_normal: (0.0, 2.0f32.sqrt(), 2.0f32.sqrt()),
-                radius: 0.5,
+                pos: [0.0, 3.0, 0.5],
+                out_normal: [0.0, 9.0f32.sqrt(), 2.0f32.sqrt()],
+                radius: 0.7,
             },
             BranchPoint {
-                pos: [0.0, 1.0, -0.5],
-                out_normal: (0.0, 2.0f32.sqrt(), -2.0f32.sqrt()),
-                radius: 0.5,
+                pos: [0.0, 3.0, -0.5],
+                out_normal: [0.0, 9.0f32.sqrt(), -2.0f32.sqrt()],
+                radius: 0.7,
             },
         ];
 
-        let mut points = vec![];
         for _ in 0..1 {
             let mut points_bot = Vec::new();
 
@@ -229,12 +228,22 @@ impl Example {
             // Top points are ahead by half a step
             let mut points_top = Vec::new();
 
+            let mut sub_transforms = Vec::new();
+
             for branch in &branch_points {
                 let mut transform = Transform::default();
                 transform.set_scale(branch.radius, branch.radius, branch.radius);
-                // now rotation
+                let rot =  UnitQuaternion::rotation_between(
+                    &Vector3::new(0.0, 1.0, 0.0),
+                    &branch.out_normal.into());
+                if let Some(rot) = rot {
+                    transform.set_rotation(rot);
+                }
                 transform.set_position(branch.pos.into());
                 let matrix = transform.matrix();
+                if depth > 1 {
+                    sub_transforms.push(matrix.clone());
+                }
                 for i in 0..POINTS/2 {
                     let u = (i as f32 + 0.5) / ((POINTS/2) as f32);
                     let u = if branch.pos[2] < 0.0 { u + 0.25 } else { u + 0.75 };
@@ -262,7 +271,32 @@ impl Example {
                 points.push(points_top[i1]);
                 points.push(points_bot[i1]);
             }
+
+            if depth > 1 {
+                let mut sub_points = Vec::new();
+                self.make_tree_points(&mut sub_points, depth-1);
+                for transform in &sub_transforms {
+                    for PosNormTex { position, normal, tex_coord } in &sub_points {
+                        let pos = Vector4::new(*position.get(0).unwrap(), *position.get(1).unwrap(), *position.get(2).unwrap(), 1.0);
+                        let pos = transform * pos;
+
+                        let normal = Vector4::new(*normal.get(0).unwrap(), *normal.get(1).unwrap(), *normal.get(2).unwrap(), 1.0);
+                        let normal = transform * normal;
+
+                        points.push(PosNormTex {
+                            position: pos.fixed_rows::<U3>(0).into(),
+                            normal: normal.fixed_rows::<U3>(0).into(),
+                            tex_coord: *tex_coord
+                        });
+                    }
+                }
+            }
         }
+    }
+
+    fn make_tree_mesh(&mut self, world: &mut World, depth: usize) -> Handle<Mesh> {
+        let mut points = Vec::new();
+        self.make_tree_points(&mut points, depth);
 
         world.exec(|loader: AssetLoaderSystemData<'_, Mesh>| {
             loader.load_from_data(
@@ -299,9 +333,9 @@ impl Example {
         let material_defaults = world.read_resource::<MaterialDefaults>().0.clone();
 
         let mut thing_pos = Transform::default();
-        thing_pos.set_scale(0.2, 1.0, 0.2);
+        thing_pos.set_scale(1.0, 1.0, 1.0);
         //thing_pos.face_towards([0.0, -10.0, 0.0].into(), [0.0, 0.0, 1.0].into());
-        let thing_mesh = self.make_tree_mesh(world);
+        let thing_mesh = self.make_tree_mesh(world, 8);
 
         let thing_albedo = world.exec(|loader: AssetLoaderSystemData<'_, Texture>| {
             loader.load_from_data([0.4, 0.4, 0.0, 1.0].into(), ())
@@ -352,7 +386,7 @@ impl SimpleState for Example {
             .with(camera_trans)
             .with(ArcBallControlTag {
                 target: self.thing.unwrap(),
-                distance: 2.0,
+                distance: 16.0,
             })
             .with(FlyControlTag)
             .with(AutoFov::new())
