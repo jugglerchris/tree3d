@@ -10,7 +10,7 @@ use amethyst::{
     input::{get_key, is_close_requested, is_key_down, InputBundle},
     ecs::prelude::Entity,
 };
-use nalgebra::{Vector3, Vector4, UnitQuaternion, U3};
+use nalgebra::{Vector3, Vector4, UnitQuaternion, U3, Unit};
 use std::f32::consts::PI;
 
 
@@ -276,12 +276,16 @@ impl Example {
                 let mut sub_points = Vec::new();
                 self.make_tree_points(&mut sub_points, depth-1);
                 for transform in &sub_transforms {
+                    let mut twist = Transform::default();
+                    let rot =  UnitQuaternion::from_axis_angle(&Unit::new_normalize(Vector3::new(0.0, 1.0, 0.0)), PI/2.0);
+                    twist.set_rotation(rot);
+                    let twist_mat = twist.matrix();
                     for PosNormTex { position, normal, tex_coord } in &sub_points {
                         let pos = Vector4::new(*position.get(0).unwrap(), *position.get(1).unwrap(), *position.get(2).unwrap(), 1.0);
-                        let pos = transform * pos;
+                        let pos = transform * twist_mat * pos;
 
                         let normal = Vector4::new(*normal.get(0).unwrap(), *normal.get(1).unwrap(), *normal.get(2).unwrap(), 1.0);
-                        let normal = transform * normal;
+                        let normal = transform * twist_mat * normal;
 
                         points.push(PosNormTex {
                             position: pos.fixed_rows::<U3>(0).into(),
